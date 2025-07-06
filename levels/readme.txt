@@ -1,4 +1,5 @@
 // # - Obstacle 
+// * - Animated Obstacle
 // . - Empty space
 // F - Food
 // S - Start Point

@@ -1,7 +1,9 @@
 {
-  "width": 600,
-  "height": 400,
+  "width": 1000,
+  "height": 800,
   "cell_size": 20,
   "fps": 6,
-  "level_file": "levels/level2.txt"
+  "start_level": 1,
+  "levels_to_win": 3,
+  "food_per_level": 5
 }
