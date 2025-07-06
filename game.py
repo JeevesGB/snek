@@ -4,6 +4,15 @@ import os
 import json
 import random
 
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller .exe"""
+    try:
+        base_path = sys._MEIPASS  # PyInstaller temporary folder
+    except AttributeError:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 # ====== Load Settings ======
 DEFAULT_SETTINGS = {
     "width": 900,
@@ -31,9 +40,11 @@ FPS = settings["fps"]
 START_LEVEL = settings["start_level"]
 LEVELS_TO_WIN = settings["levels_to_win"]
 FOOD_PER_LEVEL = settings["food_per_level"]
-
 ROWS = HEIGHT // CELL_SIZE
 COLS = WIDTH // CELL_SIZE
+
+
+
 
 # ====== Load Theme ======
 DEFAULT_THEME = {
@@ -47,7 +58,7 @@ DEFAULT_THEME = {
 
 def load_theme():
     try:
-        with open("theme.json", "r") as f:
+        with open(resource_path("theme.json"), "r") as f:
             user_theme = json.load(f)
             return {**DEFAULT_THEME, **user_theme}
     except:
@@ -58,18 +69,32 @@ theme = load_theme()
 # ====== Init ======
 pygame.init()
 pygame.mixer.init()
-death_sound = pygame.mixer.Sound("audio/deathsound.mp3")
-food_sound = pygame.mixer.Sound("audio/foodpickup.mp3")
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Snake Game")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("arial", 24)
 
+# ====== Load sounds ======
+death_sound = pygame.mixer.Sound(resource_path("audio/deathsound.mp3"))
+food_sound = pygame.mixer.Sound(resource_path("audio/foodpickup.mp3"))
+
+# ====== Load Images with fallback ======
+def load_image(path):
+    try:
+        img = pygame.image.load(resource_path(path)).convert_alpha()
+        return pygame.transform.scale(img, (CELL_SIZE, CELL_SIZE))
+    except:
+        return None
+
+snake_head_img = load_image(os.path.join("img", "player.png"))
+snake_body_img = load_image(os.path.join("img", "playerbody.png"))
+
 HIGH_SCORE_FILE = "highscore.txt"
 
 def load_high_score():
-    if os.path.exists(HIGH_SCORE_FILE):
-        with open(HIGH_SCORE_FILE, "r") as f:
+    path = resource_path(HIGH_SCORE_FILE)
+    if os.path.exists(path):
+        with open(path, "r") as f:
             try:
                 line = f.read().strip()
                 if ":" in line:
@@ -80,7 +105,7 @@ def load_high_score():
     return "", 0
 
 def save_high_score(name, score):
-    with open(HIGH_SCORE_FILE, "w") as f:
+    with open(resource_path(HIGH_SCORE_FILE), "w") as f:
         f.write(f"{name}: {score}")
 
 def draw_block(color, pos):
@@ -166,7 +191,6 @@ def win_screen(score, high_name, high_score):
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 return
 
-
 def load_level(index):
     path = f"levels/level{index}.txt"
     obstacles, anim_obs = [], []
@@ -209,7 +233,6 @@ def random_free_position(snake, obstacles, anim_obs, level_width, level_height):
     if free_positions:
         return random.choice(free_positions)
     else:
-
         return (CELL_SIZE, CELL_SIZE)
 
 def main_game():
@@ -278,10 +301,16 @@ def main_game():
             if blink_on:
                 for obs in anim_obs:
                     draw_block(theme["animated_obstacle"], obs)
-            for segment in snake:
-                draw_block(theme["snake"], segment)
-            draw_block(theme["food"], food)
 
+            for i, segment in enumerate(snake):
+                if i == 0 and snake_head_img:
+                    screen.blit(snake_head_img, segment)
+                elif i > 0 and snake_body_img:
+                    screen.blit(snake_body_img, segment)
+                else:
+                    draw_block(theme["snake"], segment)
+
+            draw_block(theme["food"], food)
             draw_text(f"Score: {score}", 20, theme["text"], 10, 10, center=False)
             pygame.display.update()
 
