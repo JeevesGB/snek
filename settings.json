@@ -1,7 +1,7 @@
 {
-  "width": 900,
+  "width": 880,
   "height": 600,
-  "cell_size": 20,
+  "cell_size": 22,
   "fps": 6,
   "start_level": 1,
   "levels_to_win": 3,

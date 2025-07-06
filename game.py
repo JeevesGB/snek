@@ -6,8 +6,8 @@ import random
 
 # ====== Load Settings ======
 DEFAULT_SETTINGS = {
-    "width": 600,
-    "height": 400,
+    "width": 900,
+    "height": 600,
     "cell_size": 20,
     "fps": 6,
     "start_level": 1,
@@ -57,6 +57,9 @@ theme = load_theme()
 
 # ====== Init ======
 pygame.init()
+pygame.mixer.init()
+death_sound = pygame.mixer.Sound("audio/deathsound.mp3")
+food_sound = pygame.mixer.Sound("audio/foodpickup.mp3")
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Snake Game")
 clock = pygame.time.Clock()
@@ -143,10 +146,17 @@ def game_over_screen(score, high_name, high_score):
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 return
 
-def win_screen():
+def win_screen(score, high_name, high_score):
+    if score > high_score:
+        name = get_player_name()
+        save_high_score(name, score)
+        high_name, high_score = name, score
+
     while True:
         screen.fill(theme["background"])
         draw_text("YOU WIN!", 40, theme["snake"], WIDTH // 2, HEIGHT // 3)
+        draw_text(f"Your Score: {score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2)
+        draw_text(f"High Score: {high_name} - {high_score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2 + 40)
         draw_text("Press ENTER to return to menu", 24, theme["text"], WIDTH // 2, HEIGHT - 60)
         pygame.display.flip()
 
@@ -155,6 +165,7 @@ def win_screen():
                 pygame.quit(); sys.exit()
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 return
+
 
 def load_level(index):
     path = f"levels/level{index}.txt"
@@ -243,6 +254,7 @@ def main_game():
                 head in obstacles or
                 (blink_on and head in anim_obs)
             ):
+                death_sound.play()
                 if score > high_score:
                     name = get_player_name()
                     save_high_score(name, score)
@@ -251,6 +263,7 @@ def main_game():
                 return
 
             if head == food:
+                food_sound.play()
                 score += 1
                 food_eaten += 1
                 if food_eaten >= FOOD_PER_LEVEL:
@@ -274,7 +287,7 @@ def main_game():
 
         level += 1
 
-    win_screen()
+    win_screen(score, high_name, high_score)
 
 # ===== Main Loop =====
 while True:
