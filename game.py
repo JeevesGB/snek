@@ -198,7 +198,7 @@ def random_free_position(snake, obstacles, anim_obs, level_width, level_height):
     if free_positions:
         return random.choice(free_positions)
     else:
-        # fallback to something safe
+
         return (CELL_SIZE, CELL_SIZE)
 
 def main_game():
