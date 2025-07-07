@@ -1,3 +1,4 @@
+# (BEGINNING OF THE FILE)
 import pygame
 import sys
 import os
@@ -5,12 +6,10 @@ import json
 import random
 
 def resource_path(relative_path):
-    """Get absolute path to resource, works for dev and for PyInstaller .exe"""
     try:
-        base_path = sys._MEIPASS  # PyInstaller temporary folder
+        base_path = sys._MEIPASS
     except AttributeError:
         base_path = os.path.abspath(".")
-
     return os.path.join(base_path, relative_path)
 
 # ====== Load Settings ======
@@ -42,9 +41,6 @@ LEVELS_TO_WIN = settings["levels_to_win"]
 FOOD_PER_LEVEL = settings["food_per_level"]
 ROWS = HEIGHT // CELL_SIZE
 COLS = WIDTH // CELL_SIZE
-
-
-
 
 # ====== Load Theme ======
 DEFAULT_THEME = {
@@ -78,7 +74,7 @@ font = pygame.font.SysFont("arial", 24)
 death_sound = pygame.mixer.Sound(resource_path("audio/deathsound.mp3"))
 food_sound = pygame.mixer.Sound(resource_path("audio/foodpickup.mp3"))
 
-# ====== Load Images with fallback ======
+# ====== Load Images ======
 def load_image(path):
     try:
         img = pygame.image.load(resource_path(path)).convert_alpha()
@@ -120,6 +116,24 @@ def draw_text(text, size, color, x, y, center=True):
     else:
         rect.topleft = (x, y)
     screen.blit(label, rect)
+
+def difficulty_menu():
+    while True:
+        screen.fill(theme["background"])
+        draw_text("CHOOSE DIFFICULTY", 36, theme["snake"], WIDTH // 2, HEIGHT // 4)
+        draw_text("1 - Normal (3 Lives)", 28, theme["text"], WIDTH // 2, HEIGHT // 2 - 20)
+        draw_text("2 - Hard (1 Life)", 28, theme["text"], WIDTH // 2, HEIGHT // 2 + 20)
+        draw_text("Press 1 or 2", 20, theme["text"], WIDTH // 2, HEIGHT - 60)
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit(); sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    return 3
+                elif event.key == pygame.K_2:
+                    return 1
 
 def main_menu(high_name, high_score):
     while True:
@@ -197,7 +211,7 @@ def load_level(index):
     start, food = (CELL_SIZE, CELL_SIZE), None
 
     if not os.path.exists(path):
-        return start, food, obstacles, anim_obs, 0, 0
+        return start, food, obstacles, anim_obs, COLS, ROWS
 
     with open(path) as f:
         lines = f.readlines()
@@ -236,9 +250,10 @@ def random_free_position(snake, obstacles, anim_obs, level_width, level_height):
         return (CELL_SIZE, CELL_SIZE)
 
 def main_game():
-    level = START_LEVEL
-    score = 0
     high_name, high_score = load_high_score()
+    lives = difficulty_menu()
+    score = 0
+    level = START_LEVEL
 
     while level <= LEVELS_TO_WIN:
         start, fixed_food, obstacles, anim_obs, level_w, level_h = load_level(level)
@@ -248,8 +263,9 @@ def main_game():
         food_eaten = 0
         blink_timer = 0
         blink_on = True
+        level_complete = False
 
-        while True:
+        while not level_complete:
             clock.tick(FPS)
             blink_timer += 1
             if blink_timer % 15 == 0:
@@ -278,18 +294,23 @@ def main_game():
                 (blink_on and head in anim_obs)
             ):
                 death_sound.play()
-                if score > high_score:
-                    name = get_player_name()
-                    save_high_score(name, score)
-                    high_name, high_score = name, score
-                game_over_screen(score, high_name, high_score)
-                return
+                lives -= 1
+                if lives <= 0:
+                    if score > high_score:
+                        name = get_player_name()
+                        save_high_score(name, score)
+                        high_name, high_score = name, score
+                    game_over_screen(score, high_name, high_score)
+                    return
+                else:
+                    break  # Restart current level
 
             if head == food:
                 food_sound.play()
                 score += 1
                 food_eaten += 1
                 if food_eaten >= FOOD_PER_LEVEL:
+                    level_complete = True
                     break
                 food = random_free_position(snake, obstacles, anim_obs, level_w, level_h)
             else:
@@ -301,7 +322,6 @@ def main_game():
             if blink_on:
                 for obs in anim_obs:
                     draw_block(theme["animated_obstacle"], obs)
-
             for i, segment in enumerate(snake):
                 if i == 0 and snake_head_img:
                     screen.blit(snake_head_img, segment)
@@ -309,12 +329,13 @@ def main_game():
                     screen.blit(snake_body_img, segment)
                 else:
                     draw_block(theme["snake"], segment)
-
             draw_block(theme["food"], food)
             draw_text(f"Score: {score}", 20, theme["text"], 10, 10, center=False)
+            draw_text(f"Lives: {lives}", 20, theme["text"], WIDTH - 100, 10, center=False)
             pygame.display.update()
 
-        level += 1
+        if level_complete:
+            level += 1
 
     win_screen(score, high_name, high_score)
 
