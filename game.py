@@ -1,4 +1,3 @@
-# (BEGINNING OF THE FILE)
 import pygame
 import sys
 import os
@@ -20,7 +19,8 @@ DEFAULT_SETTINGS = {
     "fps": 6,
     "start_level": 1,
     "levels_to_win": 3,
-    "food_per_level": 5
+    "food_per_level": 5,
+    "music_enabled": True
 }
 
 def load_settings():
@@ -41,6 +41,7 @@ LEVELS_TO_WIN = settings["levels_to_win"]
 FOOD_PER_LEVEL = settings["food_per_level"]
 ROWS = HEIGHT // CELL_SIZE
 COLS = WIDTH // CELL_SIZE
+music_enabled = settings.get("music_enabled", True)
 
 # ====== Load Theme ======
 DEFAULT_THEME = {
@@ -73,6 +74,26 @@ font = pygame.font.SysFont("comic sans", 24)
 # ====== Load sounds ======
 death_sound = pygame.mixer.Sound(resource_path("audio/deathsound.mp3"))
 food_sound = pygame.mixer.Sound(resource_path("audio/foodpickup.mp3"))
+
+# ====== Load music ======
+def play_music(filename):
+    if music_enabled:
+        pygame.mixer.music.load(resource_path(os.path.join("audio", filename)))
+        pygame.mixer.music.set_volume(1.0)
+        pygame.mixer.music.play(-1)
+    else:
+        pygame.mixer.music.stop()
+
+def stop_music():
+    pygame.mixer.music.stop()
+
+def toggle_music():
+    global music_enabled
+    music_enabled = not music_enabled
+    if music_enabled:
+        pygame.mixer.music.set_volume(1.0)
+    else:
+        pygame.mixer.music.set_volume(0.0)
 
 # ====== Load Images ======
 def load_image(path):
@@ -124,6 +145,7 @@ def difficulty_menu():
         draw_text("1 - Normal (3 Lives)", 28, theme["text"], WIDTH // 2, HEIGHT // 2 - 20)
         draw_text("2 - Hard (1 Life)", 28, theme["text"], WIDTH // 2, HEIGHT // 2 + 20)
         draw_text("Press 1 or 2", 20, theme["text"], WIDTH // 2, HEIGHT - 60)
+        draw_text("M to toggle music", 18, theme["text"], 10, HEIGHT - 30, center=False)
         pygame.display.flip()
 
         for event in pygame.event.get():
@@ -134,13 +156,17 @@ def difficulty_menu():
                     return 3
                 elif event.key == pygame.K_2:
                     return 1
+                elif event.key == pygame.K_m:
+                    toggle_music()
 
 def main_menu(high_name, high_score):
+    play_music("menu.wav")
     while True:
         screen.fill(theme["background"])
         draw_text("SNAKE GAME", 40, theme["snake"], WIDTH // 2, HEIGHT // 4)
         draw_text("Press ENTER to Start", 24, theme["text"], WIDTH // 2, HEIGHT // 2)
         draw_text(f"High Score: {high_name} - {high_score}", 20, theme["text"], WIDTH // 2, HEIGHT - 40)
+        draw_text("M to toggle music", 18, theme["text"], 10, HEIGHT - 30, center=False)
         pygame.display.flip()
 
         for event in pygame.event.get():
@@ -149,195 +175,164 @@ def main_menu(high_name, high_score):
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     return
+                elif event.key == pygame.K_m:
+                    toggle_music()
+
+# Placeholder implementations
 
 def get_player_name():
-    name = ""
-    while True:
-        screen.fill(theme["background"])
-        draw_text("NEW HIGH SCORE!", 30, theme["food"], WIDTH // 2, HEIGHT // 4)
-        draw_text("Enter your name:", 24, theme["text"], WIDTH // 2, HEIGHT // 2 - 30)
-        draw_text(name, 24, theme["text"], WIDTH // 2, HEIGHT // 2 + 10)
-        pygame.display.flip()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit(); sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN and name:
-                    return name
-                elif event.key == pygame.K_BACKSPACE:
-                    name = name[:-1]
-                elif event.unicode.isprintable() and len(name) < 15:
-                    name += event.unicode
+    return "Player"
 
 def game_over_screen(score, high_name, high_score):
-    while True:
-        screen.fill(theme["background"])
-        draw_text("lol noob", 40, theme["food"], WIDTH // 2, HEIGHT // 4)
-        draw_text(f"Your Score: {score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2 - 20)
-        draw_text(f"High Score: {high_name} - {high_score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2 + 10)
-        draw_text("Press ENTER to Return to Menu", 20, theme["text"], WIDTH // 2, HEIGHT - 60)
-        pygame.display.flip()
+    draw_text("Game Over", 40, theme["food"], WIDTH // 2, HEIGHT // 2 - 40)
+    draw_text(f"Score: {score}", 28, theme["text"], WIDTH // 2, HEIGHT // 2)
+    draw_text(f"High Score: {high_name} - {high_score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2 + 40)
+    pygame.display.flip()
+    pygame.time.wait(3000)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit(); sys.exit()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                return
+def win_screen(score):
+    draw_text("You Win!", 40, theme["snake"], WIDTH // 2, HEIGHT // 2 - 40)
+    draw_text(f"Final Score: {score}", 28, theme["text"], WIDTH // 2, HEIGHT // 2)
+    pygame.display.flip()
+    pygame.time.wait(3000)
 
-def win_screen(score, high_name, high_score):
-    if score > high_score:
-        name = get_player_name()
-        save_high_score(name, score)
-        high_name, high_score = name, score
+def load_level(level):
+    level_file = resource_path(os.path.join("levels", f"level{level}.txt"))
 
-    while True:
-        screen.fill(theme["background"])
-        draw_text("yore winner", 40, theme["snake"], WIDTH // 2, HEIGHT // 3)
-        draw_text(f"Your Score: {score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2)
-        draw_text(f"High Score: {high_name} - {high_score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2 + 40)
-        draw_text("Press ENTER to return to menu", 24, theme["text"], WIDTH // 2, HEIGHT - 60)
-        pygame.display.flip()
+    start = (CELL_SIZE * 5, CELL_SIZE * 5)
+    fixed_food = None
+    obstacles = []
+    animated_obstacles = []
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit(); sys.exit()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                return
+    if not os.path.exists(level_file):
+        print(f"Level file {level_file} not found. Using default empty level.")
+        return start, fixed_food, obstacles, animated_obstacles, COLS, ROWS
 
-def load_level(index):
-    path = f"levels/level{index}.txt"
-    obstacles, anim_obs = [], []
-    start, food = (CELL_SIZE, CELL_SIZE), None
+    with open(level_file, "r") as f:
+        lines = [line.rstrip("\n") for line in f.readlines()]
 
-    if not os.path.exists(path):
-        return start, food, obstacles, anim_obs, COLS, ROWS
-
-    with open(path) as f:
-        lines = f.readlines()
-
-    level_height = len(lines)
-    level_width = max(len(line.strip()) for line in lines) if lines else 0
-
-    for row, line in enumerate(lines):
-        for col, char in enumerate(line.strip()):
-            x, y = col * CELL_SIZE, row * CELL_SIZE
+    for row_idx, line in enumerate(lines):
+        for col_idx, char in enumerate(line):
+            pos = (col_idx * CELL_SIZE, row_idx * CELL_SIZE)
             if char == "#":
-                obstacles.append((x, y))
-            elif char == "*":
-                anim_obs.append((x, y))
+                obstacles.append(pos)
+            elif char == "A" or char == "*":  
+                animated_obstacles.append(pos)
             elif char == "S":
-                start = (x, y)
+                start = pos
             elif char == "F":
-                food = (x, y)
+                fixed_food = pos
 
-    return start, food, obstacles, anim_obs, level_width, level_height
+    level_w = max(len(line) for line in lines)
+    level_h = len(lines)
 
-def get_all_free_positions(snake, obstacles, anim_obs, level_width, level_height):
-    free_positions = []
-    for x in range(0, level_width * CELL_SIZE, CELL_SIZE):
-        for y in range(0, level_height * CELL_SIZE, CELL_SIZE):
-            pos = (x, y)
-            if pos not in obstacles and pos not in anim_obs and pos not in snake:
-                free_positions.append(pos)
-    return free_positions
+    return start, fixed_food, obstacles, animated_obstacles, level_w, level_h
 
-def random_free_position(snake, obstacles, anim_obs, level_width, level_height):
-    free_positions = get_all_free_positions(snake, obstacles, anim_obs, level_width, level_height)
-    if free_positions:
-        return random.choice(free_positions)
-    else:
-        return (CELL_SIZE, CELL_SIZE)
+
+
+def random_free_position(snake, obstacles, anim_obs, level_w, level_h):
+    while True:
+        pos = (random.randint(0, level_w - 1) * CELL_SIZE, random.randint(0, level_h - 1) * CELL_SIZE)
+        if pos not in snake and pos not in obstacles and pos not in anim_obs:
+            return pos
 
 def main_game():
+    play_music("gamemusic.wav")
     high_name, high_score = load_high_score()
     lives = difficulty_menu()
     score = 0
     level = START_LEVEL
 
     while level <= LEVELS_TO_WIN:
-        start, fixed_food, obstacles, anim_obs, level_w, level_h = load_level(level)
-        snake = [start]
-        direction = (CELL_SIZE, 0)
-        food = fixed_food if fixed_food else random_free_position(snake, obstacles, anim_obs, level_w, level_h)
-        food_eaten = 0
-        blink_timer = 0
-        blink_on = True
-        level_complete = False
+        while True:
+            start, fixed_food, obstacles, anim_obs, level_w, level_h = load_level(level)
+            snake = [start]
+            direction = (CELL_SIZE, 0)
+            food = fixed_food if fixed_food else random_free_position(snake, obstacles, anim_obs, level_w, level_h)
+            food_eaten = 0
+            blink_timer = 0
+            blink_on = True
+            level_complete = False
 
-        while not level_complete:
-            clock.tick(FPS)
-            blink_timer += 1
-            if blink_timer % 15 == 0:
-                blink_on = not blink_on
+            while not level_complete:
+                clock.tick(FPS)
+                blink_timer += 1
+                if blink_timer % 15 == 0:
+                    blink_on = not blink_on
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit(); sys.exit()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_UP and direction[1] == 0:
-                        direction = (0, -CELL_SIZE)
-                    elif event.key == pygame.K_DOWN and direction[1] == 0:
-                        direction = (0, CELL_SIZE)
-                    elif event.key == pygame.K_LEFT and direction[0] == 0:
-                        direction = (-CELL_SIZE, 0)
-                    elif event.key == pygame.K_RIGHT and direction[0] == 0:
-                        direction = (CELL_SIZE, 0)
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit(); sys.exit()
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_UP and direction[1] == 0:
+                            direction = (0, -CELL_SIZE)
+                        elif event.key == pygame.K_DOWN and direction[1] == 0:
+                            direction = (0, CELL_SIZE)
+                        elif event.key == pygame.K_LEFT and direction[0] == 0:
+                            direction = (-CELL_SIZE, 0)
+                        elif event.key == pygame.K_RIGHT and direction[0] == 0:
+                            direction = (CELL_SIZE, 0)
+                        elif event.key == pygame.K_m:
+                            toggle_music()
 
-            head = (snake[0][0] + direction[0], snake[0][1] + direction[1])
-            snake.insert(0, head)
+                head = (snake[0][0] + direction[0], snake[0][1] + direction[1])
+                snake.insert(0, head)
 
-            if (
-                head in snake[1:] or
-                not (0 <= head[0] < level_w * CELL_SIZE and 0 <= head[1] < level_h * CELL_SIZE) or
-                head in obstacles or
-                (blink_on and head in anim_obs)
-            ):
-                death_sound.play()
-                lives -= 1
-                if lives <= 0:
-                    if score > high_score:
-                        name = get_player_name()
-                        save_high_score(name, score)
-                        high_name, high_score = name, score
-                    game_over_screen(score, high_name, high_score)
-                    return
+                if (
+                    head in snake[1:] or
+                    not (0 <= head[0] < level_w * CELL_SIZE and 0 <= head[1] < level_h * CELL_SIZE) or
+                    head in obstacles or
+                    (blink_on and head in anim_obs)
+                ):
+                    death_sound.play()
+                    lives -= 1
+                    if lives <= 0:
+                        if score > high_score:
+                            name = get_player_name()
+                            save_high_score(name, score)
+                        game_over_screen(score, high_name, high_score)
+                        return
+                    else:
+                        break
+
+                if head == food:
+                    food_sound.play()
+                    score += 1
+                    food_eaten += 1
+                    if food_eaten >= FOOD_PER_LEVEL:
+                        level_complete = True
+                        break
+                    food = random_free_position(snake, obstacles, anim_obs, level_w, level_h)
                 else:
-                    break  # Restart current level
+                    snake.pop()
 
-            if head == food:
-                food_sound.play()
-                score += 1
-                food_eaten += 1
-                if food_eaten >= FOOD_PER_LEVEL:
-                    level_complete = True
-                    break
-                food = random_free_position(snake, obstacles, anim_obs, level_w, level_h)
-            else:
-                snake.pop()
+                screen.fill(theme["background"])
+                for obs in obstacles:
+                    draw_block(theme["obstacle"], obs)
+                if blink_on:
+                    for obs in anim_obs:
+                        draw_block(theme["animated_obstacle"], obs)
+                for i, segment in enumerate(snake):
+                    if i == 0 and snake_head_img:
+                        screen.blit(snake_head_img, segment)
+                    elif i > 0 and snake_body_img:
+                        screen.blit(snake_body_img, segment)
+                    else:
+                        draw_block(theme["snake"], segment)
+                draw_block(theme["food"], food)
 
-            screen.fill(theme["background"])
-            for obs in obstacles:
-                draw_block(theme["obstacle"], obs)
-            if blink_on:
-                for obs in anim_obs:
-                    draw_block(theme["animated_obstacle"], obs)
-            for i, segment in enumerate(snake):
-                if i == 0 and snake_head_img:
-                    screen.blit(snake_head_img, segment)
-                elif i > 0 and snake_body_img:
-                    screen.blit(snake_body_img, segment)
-                else:
-                    draw_block(theme["snake"], segment)
-            draw_block(theme["food"], food)
-            draw_text(f"Score: {score}", 20, theme["text"], 10, 10, center=False)
-            draw_text(f"Lives: {lives}", 20, theme["text"], WIDTH - 100, 10, center=False)
-            pygame.display.update()
+                draw_text(f"Score: {score}", 20, theme["text"], 10, 10, center=False)
+                draw_text(f"Lives: {lives}", 20, theme["text"], WIDTH - 100, 10, center=False)
+                pygame.display.update()
 
-        if level_complete:
-            level += 1
+            if level_complete:
+                level += 1
+                break
 
-    win_screen(score, high_name, high_score)
+    if score > high_score:
+        name = get_player_name()
+        save_high_score(name, score)
+    win_screen(score)
 
 # ===== Main Loop =====
 while True:

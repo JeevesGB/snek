@@ -6,4 +6,5 @@
   "start_level": 1,
   "levels_to_win": 4,
   "food_per_level": 5
+  "music_enabled": true
 }
