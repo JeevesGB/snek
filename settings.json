@@ -4,6 +4,6 @@
   "cell_size": 22,
   "fps": 6,
   "start_level": 1,
-  "levels_to_win": 3,
+  "levels_to_win": 4,
   "food_per_level": 5
 }

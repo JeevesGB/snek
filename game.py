@@ -16,7 +16,7 @@ def resource_path(relative_path):
 DEFAULT_SETTINGS = {
     "width": 900,
     "height": 600,
-    "cell_size": 20,
+    "cell_size": 22,
     "fps": 6,
     "start_level": 1,
     "levels_to_win": 3,
@@ -68,7 +68,7 @@ pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Snake Game")
 clock = pygame.time.Clock()
-font = pygame.font.SysFont("arial", 24)
+font = pygame.font.SysFont("comic sans", 24)
 
 # ====== Load sounds ======
 death_sound = pygame.mixer.Sound(resource_path("audio/deathsound.mp3"))
@@ -173,7 +173,7 @@ def get_player_name():
 def game_over_screen(score, high_name, high_score):
     while True:
         screen.fill(theme["background"])
-        draw_text("GAME OVER", 40, theme["food"], WIDTH // 2, HEIGHT // 4)
+        draw_text("lol noob", 40, theme["food"], WIDTH // 2, HEIGHT // 4)
         draw_text(f"Your Score: {score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2 - 20)
         draw_text(f"High Score: {high_name} - {high_score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2 + 10)
         draw_text("Press ENTER to Return to Menu", 20, theme["text"], WIDTH // 2, HEIGHT - 60)
@@ -193,7 +193,7 @@ def win_screen(score, high_name, high_score):
 
     while True:
         screen.fill(theme["background"])
-        draw_text("YOU WIN!", 40, theme["snake"], WIDTH // 2, HEIGHT // 3)
+        draw_text("yore winner", 40, theme["snake"], WIDTH // 2, HEIGHT // 3)
         draw_text(f"Your Score: {score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2)
         draw_text(f"High Score: {high_name} - {high_score}", 24, theme["text"], WIDTH // 2, HEIGHT // 2 + 40)
         draw_text("Press ENTER to return to menu", 24, theme["text"], WIDTH // 2, HEIGHT - 60)
